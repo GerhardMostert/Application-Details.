@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Application Details</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --card-bg: #ffffff;
+      --accent: #0f866c;
+      --accent-soft: rgba(15, 134, 108, 0.12);
+      --accent-border: rgba(15, 134, 108, 0.35);
+      --border: #e1e4ea;
+      --text-main: #22252a;
+      --text-muted: #7a7f89;
+      --danger: #d9534f;
+      --radius-lg: 18px;
+      --radius-md: 10px;
+      --shadow-soft: 0 18px 35px rgba(15, 34, 58, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: radial-gradient(circle at top left, #fdfdfd 0, #f1f3f7 60%, #e8edf5 100%);
+      color: var(--text-main);
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 18px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0.08em;
+    }
+
+    header .subtitle {
+      margin-top: 2px;
+      font-size: 11px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 999px;
+      padding: 4px;
+      border: 1px solid rgba(185, 191, 204, 0.6);
+      box-shadow: 0 8px 20px rgba(15, 34, 58, 0.08);
+      backdrop-filter: blur(10px);
+      margin-bottom: 18px;
+    }
+
+    .tab-button {
+      border: none;
+      background: transparent;
+      padding: 7px 22px;
+      border-radius: 999px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .tab-button span.icon {
+      font-size: 16px;
+    }
+
+    .tab-button.active {
+      background: #ffffff;
+      color: var(--accent);
+      box-shadow: 0 10px 24px rgba(15, 34, 58, 0.12);
+      border: 1px solid rgba(15, 134, 108, 0.15);
+    }
+
+    .tab-button:not(.active):hover {
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 20px 18px 22px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(201, 207, 219, 0.75);
+      margin-top: 10px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 15px;
+    }
+
+    .card small {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Map layout */
+    #map-card {
+      display: none; /* Job Card shows first */
+    }
+
+    #map {
+      width: 100%;
+      height: 420px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .map-toolbar {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .map-btn {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      font-size: 12px;
+      background: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.16s ease;
+    }
+
+    .map-btn span.icon {
+      font-size: 14px;
+    }
+
+    .map-btn:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent-border);
+    }
+
+    .map-btn.primary,
+    .map-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .map-instruction {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Job card form */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      padding: 8px 9px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      background: #fcfdff;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(15, 134, 108, 0.2);
+    }
+
+    .field small {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    /* Chemical loads */
+    .chem-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .chem-table th,
+    .chem-table td {
+      padding: 6px 4px;
+      text-align: left;
+    }
+
+    .chem-table thead th {
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chem-table tbody tr:nth-child(even) {
+      background: #fafbff;
+    }
+
+    .chem-col-num {
+      width: 30px;
+    }
+
+    .chem-col-remove {
+      width: 40px;
+      text-align: center;
+    }
+
+    .chem-input {
+      width: 100%;
+      padding: 6px 7px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .remove-row-btn {
+      border: none;
+      background: transparent;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .add-row-btn {
+      margin-top: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px dashed var(--accent-border);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* Footer buttons */
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      background: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn.danger {
+      border-color: rgba(217, 83, 79, 0.35);
+      background: rgba(217, 83, 79, 0.07);
+      color: #b93b37;
+    }
+
+    .btn:hover {
+      box-shadow: 0 10px 20px rgba(15, 34, 58, 0.12);
+      transform: translateY(-0.5px);
+    }
+
+    .save-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 16px;
+      }
+
+      .card {
+        padding: 16px 14px 18px;
+      }
+
+      #map {
+        height: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Application Details</h1>
+      <div class="subtitle">Details</div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-button active" data-target="job-card">
+        <span class="icon">📋</span>
+        Application
+      </button>
+      <button class="tab-button" data-target="map-card">
+        <span class="icon">🗺️</span>
+        Satellite Map
+      </button>
+    </div>
+
+    <!-- Map tab -->
+    <section id="map-card" class="card">
+      <h2>Field Map <small>(Satellite imagery with labels)</small></h2>
+
+      <div class="map-toolbar">
+        <button id="draw-btn" class="map-btn primary">
+          <span class="icon">✏️</span>
+          Draw Polygon
+        </button>
+        <button id="undo-btn" class="map-btn">
+          ← Undo Last Point
+        </button>
+        <button id="clear-btn" class="map-btn">
+          Clear Polygon
+        </button>
+        <button id="save-polygon-btn" class="map-btn">
+          💾 Save Polygon
+        </button>
+      </div>
+
+      <div id="map"></div>
+
+      <div class="map-instruction">
+        Left-click to add points while <strong>Draw Polygon</strong> is active.
+        Right-click to delete the nearest point to where you clicked.
+        Use <strong>Undo Last Point</strong> to step back, or <strong>Clear Polygon</strong> to start again.
+        Use <strong>Save Polygon</strong> to store the shape and start a new one.
+      </div>
+    </section>
+
+    <!-- Job card tab -->
+    <section id="job-card" class="card">
+      <h2>Application Details</h2>
+      <form id="job-form">
+        <!-- Job details -->
+        <div class="field-group">
+          <div class="field">
+            <label for="date">Date</label>
+            <input id="date" name="date" type="date" />
+            <small>Format: yyyy-mm-dd</small>
+          </div>
+
+          <div class="field">
+            <label for="cropType">Crop Type</label>
+            <input id="cropType" name="cropType" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="clientName">Client Name</label>
+            <input id="clientName" name="clientName" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="pestType">Pest Type</label>
+            <input id="pestType" name="pestType" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="clientContact">Client Contact</label>
+            <input id="clientContact" name="clientContact" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="pilot">Pilot</label>
+            <input id="pilot" name="pilot" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="aircraft">Aircraft</label>
+            <input id="aircraft" name="aircraft" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="clientAddress">Client Address</label>
+            <input id="clientAddress" name="clientAddress" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="areaAffected">Area Affected (Ha)</label>
+            <input id="areaAffected" name="areaAffected" type="number" step="0.01" />
+          </div>
+
+          <div class="field">
+            <label for="strip">Strip</label>
+            <input id="strip" name="strip" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="mapSupplied">Map Supplied</label>
+            <select id="mapSupplied" name="mapSupplied">
+              <option value="">Select</option>
+              <option>Yes</option>
+              <option>No</option>
+              <option>On-board GPS only</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="loads">Loads (#)</label>
+            <input id="loads" name="loads" type="number" min="0" />
+          </div>
+        </div>
+
+        <!-- Chemical loads -->
+        <div>
+          <div class="section-title">Chemical Loads</div>
+          <table class="chem-table">
+            <thead>
+              <tr>
+                <th class="chem-col-num">#</th>
+                <th>Chemical</th>
+                <th>Dosage</th>
+                <th class="chem-col-remove">Remove</th>
+              </tr>
+            </thead>
+            <tbody id="chem-body"></tbody>
+          </table>
+          <button id="add-row" type="button" class="add-row-btn">＋ Add Row</button>
+        </div>
+
+        <!-- Advisory info: only Yes/No boxes -->
+        <div>
+          <div class="section-title">Advisory Information</div>
+          <div class="field-group">
+            <div class="field">
+              <label for="infestation">Infestation level</label>
+              <select id="infestation" name="infestation">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="withholding">Withholding period</label>
+              <select id="withholding" name="withholding">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="safeReentry">Safe re-entry time</label>
+              <select id="safeReentry" name="safeReentry">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="notification">Notification</label>
+              <select id="notification" name="notification">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="precautions">Additional precautions</label>
+              <select id="precautions" name="precautions">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="comments">Comments</label>
+              <textarea id="comments" name="comments"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Client / advisor -->
+        <div>
+          <div class="section-title">Client / Advisor Details</div>
+          <div class="field-group">
+            <div class="field">
+              <label for="advisorCompany">Client/Advisor Company</label>
+              <input id="advisorCompany" name="advisorCompany" type="text" />
+            </div>
+            <div class="field">
+              <label for="advisorName">Client/Advisor Name</label>
+              <input id="advisorName" name="advisorName" type="text" />
+            </div>
+            <div class="field">
+              <label for="signature">Signature</label>
+              <input id="signature" name="signature" type="text" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="form-actions">
+          <button id="clear-form" type="button" class="btn danger">
+            Clear Form
+          </button>
+          <button id="save-btn" type="button" class="btn primary">
+            💾 Send to Email
+          </button>
+        </div>
+        <div class="save-note">
+          Clicking the button opens an email to <strong>jgcmostert@gmail.com</strong> with all details in the body.
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // -------- Tabs --------
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const jobCardSection = document.getElementById('job-card');
+    const mapSection = document.getElementById('map-card');
+
+    let fieldMap; // will be created lazily
+
+    function showTab(targetId) {
+      jobCardSection.style.display = targetId === 'job-card' ? 'block' : 'none';
+      mapSection.style.display = targetId === 'map-card' ? 'block' : 'none';
+
+      tabButtons.forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.target === targetId);
+      });
+
+      if (targetId === 'map-card') {
+        // create map first time we open the tab
+        if (!fieldMap) {
+          setTimeout(() => {
+            initMap();
+          }, 0);
+        } else {
+          setTimeout(() => {
+            fieldMap.invalidateSize();
+          }, 0);
+        }
+      }
+    }
+
+    tabButtons.forEach((btn) => {
+      btn.addEventListener('click', () => showTab(btn.dataset.target));
+    });
+
+    // Default view
+    showTab('job-card');
+
+    // -------- Leaflet Map --------
+    let drawing = true;
+    let polygonPoints = [];
+    let polygonLayer = null;
+    let pointMarkers = [];
+    let savedPolygons = [];
+
+    const drawBtn = document.getElementById('draw-btn');
+    const undoBtn = document.getElementById('undo-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const savePolygonBtn = document.getElementById('save-polygon-btn');
+
+    function setDrawButtonState() {
+      if (drawing) {
+        drawBtn.classList.add('active', 'primary');
+        drawBtn.innerHTML = '<span class="icon">✏️</span> Drawing (click to pause)';
+      } else {
+        drawBtn.classList.remove('active');
+        drawBtn.classList.add('primary');
+        drawBtn.innerHTML = '<span class="icon">✏️</span> Draw Polygon';
+      }
+    }
+
+    function initMap() {
+      fieldMap = L.map('map', {
+        center: [-29.0, 25.0], // South Africa-ish
+        zoom: 5,
+        zoomControl: true,
+        attributionControl: true,
+        preferCanvas: false
+      });
+
+      // Satellite imagery
+      const imagery = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 19,
+          attribution:
+            'Tiles © Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        }
+      );
+
+      // Labels & boundaries overlay
+      const labels = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 19,
+          attribution: 'Labels © Esri'
+        }
+      );
+
+      imagery.addTo(fieldMap);
+      labels.addTo(fieldMap);
+
+      // Left click -> add point while drawing
+      fieldMap.on('click', function (e) {
+        if (!drawing) return;
+        addPoint(e.latlng);
+      });
+
+      // Right click -> delete nearest point while drawing
+      fieldMap.on('contextmenu', function (e) {
+        if (!drawing || polygonPoints.length === 0) return;
+        deleteNearestPoint(e.latlng);
+      });
+
+      // ensure map tiles fill container
+      setTimeout(() => fieldMap.invalidateSize(), 50);
+
+      // Init draw button UI
+      setDrawButtonState();
+    }
+
+    function addPoint(latlng) {
+      polygonPoints.push(latlng);
+
+      // marker for visual dot
+      const marker = L.circleMarker(latlng, {
+        radius: 4,
+        color: '#0f866c',
+        fillColor: '#0f866c',
+        fillOpacity: 0.9
+      }).addTo(fieldMap);
+      pointMarkers.push(marker);
+
+      if (!polygonLayer) {
+        polygonLayer = L.polygon(polygonPoints, {
+          color: '#0f866c',
+          weight: 2,
+          fillColor: '#0f866c',
+          fillOpacity: 0.2
+        }).addTo(fieldMap);
+      } else {
+        polygonLayer.setLatLngs(polygonPoints);
+      }
+    }
+
+    function deleteNearestPoint(latlng) {
+      if (polygonPoints.length === 0) return;
+
+      let nearestIndex = 0;
+      let nearestDist = Infinity;
+      const targetPoint = fieldMap.latLngToLayerPoint(latlng);
+
+      polygonPoints.forEach((pt, idx) => {
+        const p = fieldMap.latLngToLayerPoint(pt);
+        const d = p.distanceTo(targetPoint);
+        if (d < nearestDist) {
+          nearestDist = d;
+          nearestIndex = idx;
+        }
+      });
+
+      polygonPoints.splice(nearestIndex, 1);
+      const marker = pointMarkers.splice(nearestIndex, 1)[0];
+      fieldMap.removeLayer(marker);
+
+      if (polygonPoints.length === 0) {
+        if (polygonLayer) {
+          fieldMap.removeLayer(polygonLayer);
+          polygonLayer = null;
+        }
+      } else {
+        polygonLayer.setLatLngs(polygonPoints);
+      }
+    }
+
+    function undoLastPoint() {
+      if (polygonPoints.length === 0) return;
+      polygonPoints.pop();
+      const marker = pointMarkers.pop();
+      fieldMap.removeLayer(marker);
+
+      if (polygonPoints.length === 0) {
+        if (polygonLayer) {
+          fieldMap.removeLayer(polygonLayer);
+          polygonLayer = null;
+        }
+      } else {
+        polygonLayer.setLatLngs(polygonPoints);
+      }
+    }
+
+    function clearPolygon() {
+      polygonPoints = [];
+      if (polygonLayer) {
+        fieldMap.removeLayer(polygonLayer);
+        polygonLayer = null;
+      }
+      pointMarkers.forEach((m) => fieldMap.removeLayer(m));
+      pointMarkers = [];
+    }
+
+    // Map buttons
+    drawBtn.addEventListener('click', () => {
+      drawing = !drawing;
+      setDrawButtonState();
+    });
+
+    undoBtn.addEventListener('click', undoLastPoint);
+    clearBtn.addEventListener('click', () => {
+      clearPolygon();
+    });
+
+    savePolygonBtn.addEventListener('click', () => {
+      if (!fieldMap || polygonPoints.length < 3) {
+        alert('Polygon must have at least 3 points before saving.');
+        return;
+      }
+
+      // Create a permanent polygon from current points
+      const saved = L.polygon(polygonPoints, {
+        color: '#0f866c',
+        weight: 2,
+        fillColor: '#0f866c',
+        fillOpacity: 0.15
+      }).addTo(fieldMap);
+      savedPolygons.push(saved);
+
+      // Clear the current drawing
+      clearPolygon();
+
+      // Pause drawing; user must click Draw again to start a new polygon
+      drawing = false;
+      setDrawButtonState();
+    });
+
+    // -------- Chemical loads dynamic rows --------
+    const chemBody = document.getElementById('chem-body');
+    const addRowBtn = document.getElementById('add-row');
+
+    function refreshRowNumbers() {
+      const rows = chemBody.querySelectorAll('tr');
+      rows.forEach((row, idx) => {
+        row.querySelector('.row-num').textContent = idx + 1;
+      });
+    }
+
+    function addChemRow(chemical = '', dosage = '') {
+      const row = document.createElement('tr');
+
+      row.innerHTML = `
+        <td class="chem-col-num"><span class="row-num"></span></td>
+        <td><input type="text" class="chem-input chem-name" value="${chemical}"></td>
+        <td><input type="text" class="chem-input chem-dosage" value="${dosage}"></td>
+        <td class="chem-col-remove">
+          <button type="button" class="remove-row-btn" title="Remove row">✕</button>
+        </td>
+      `;
+
+      row.querySelector('.remove-row-btn').addEventListener('click', () => {
+        chemBody.removeChild(row);
+        refreshRowNumbers();
+      });
+
+      chemBody.appendChild(row);
+      refreshRowNumbers();
+    }
+
+    addRowBtn.addEventListener('click', () => addChemRow());
+
+    // start with eight rows
+    addChemRow('', '');
+    addChemRow('', '');
+    addChemRow('', '');
+    addChemRow('', '');
+    addChemRow('', '');
+    addChemRow('', '');
+    addChemRow('', '');
+    addChemRow('', '');
+
+    // -------- Clear form --------
+    const form = document.getElementById('job-form');
+    const clearFormBtn = document.getElementById('clear-form');
+
+    clearFormBtn.addEventListener('click', () => {
+      if (!confirm('Clear all fields and chemical rows?')) return;
+      form.reset();
+      chemBody.innerHTML = '';
+      addChemRow('', '');
+      addChemRow('', '');
+      addChemRow('', '');
+      addChemRow('', '');
+      addChemRow('', '');
+      addChemRow('', '');
+      addChemRow('', '');
+      addChemRow('', '');
+    });
+
+    // -------- Save to Email (mailto) --------
+    const saveBtn = document.getElementById('save-btn');
+
+    function gatherFormData() {
+      const getVal = (id) => document.getElementById(id).value.trim();
+
+      let text = '';
+      text += 'CROPSPRAY Application Details\n';
+      text += '-------------------\n\n';
+
+      text += `Date: ${getVal('date')}\n`;
+      text += `Crop Type: ${getVal('cropType')}\n`;
+      text += `Client Name: ${getVal('clientName')}\n`;
+      text += `Pest Type: ${getVal('pestType')}\n`;
+      text += `Client Contact: ${getVal('clientContact')}\n`;
+      text += `Pilot: ${getVal('pilot')}\n`;
+      text += `Aircraft: ${getVal('aircraft')}\n`;
+      text += `Client Address: ${getVal('clientAddress')}\n`;
+      text += `Area Affected (Ha): ${getVal('areaAffected')}\n`;
+      text += `Strip: ${getVal('strip')}\n`;
+      text += `Map Supplied: ${getVal('mapSupplied')}\n`;
+      text += `Loads (#): ${getVal('loads')}\n\n`;
+
+      text += 'CHEMICAL LOADS\n';
+      text += '--------------\n';
+      const rows = chemBody.querySelectorAll('tr');
+      rows.forEach((row, idx) => {
+        const chem = row.querySelector('.chem-name').value.trim();
+        const dose = row.querySelector('.chem-dosage').value.trim();
+        text += `${idx + 1}. Chemical: ${chem} | Dosage: ${dose}\n`;
+      });
+      text += '\n';
+
+      text += 'ADVISORY INFORMATION\n';
+      text += '---------------------\n';
+      text += `Infestation level: ${getVal('infestation')}\n`;
+      text += `Withholding period: ${getVal('withholding')}\n`;
+      text += `Safe re-entry time: ${getVal('safeReentry')}\n`;
+      text += `Notification: ${getVal('notification')}\n`;
+      text += `Additional precautions: ${getVal('precautions')}\n`;
+      text += `Comments: ${getVal('comments')}\n\n`;
+
+      text += 'CLIENT / ADVISOR DETAILS\n';
+      text += '------------------------\n';
+      text += `Company: ${getVal('advisorCompany')}\n`;
+      text += `Name: ${getVal('advisorName')}\n`;
+      text += `Signature: ${getVal('signature')}\n`;
+
+      return text;
+    }
+
+    // NEW: open email instead of downloading txt
+    saveBtn.addEventListener('click', () => {
+      const content = gatherFormData();
+
+      const subject = 'CROPSPRAY Application Details';
+      const mailtoLink =
+        'mailto:jgcmostert@gmail.com'
+        + '?subject=' + encodeURIComponent(subject)
+        + '&body=' + encodeURIComponent(content);
+
+      // Open default mail client / Gmail handler
+      window.location.href = mailtoLink;
+      // Or, if you prefer a new tab:
+      // window.open(mailtoLink, '_blank');
+    });
+  </script>
+</body>
+</html>
